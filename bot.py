@@ -3,26 +3,21 @@ from aiogram.utils import executor
 from models import init_db, get_user_assets
 from crypto_service import get_price
 
-# Telegram bot tokenın
 API_TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-# Veritabanını başlat
 init_db()
 
-# /start komutu
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
     await message.reply("Merhaba! Ben kripto asistan botuyum.")
 
-# /help komutu
 @dp.message_handler(commands=['help'])
 async def send_help(message: types.Message):
-    await message.reply("Komutlar:\n/start - Karşılama mesajı\n/help - Yardım\n/fiyat COIN - Coin fiyatını öğren\n/kar - Kar/Zarar bilgisi")
+    await message.reply("Komutlar:\n/start\n/help\n/fiyat COIN\n/kar")
 
-# /fiyat komutu
 @dp.message_handler(commands=['fiyat'])
 async def handle_fiyat(message: types.Message):
     try:
@@ -37,7 +32,6 @@ async def handle_fiyat(message: types.Message):
     else:
         await message.reply(f"{coin_name} fiyatı alınamadı.")
 
-# /kar komutu
 @dp.message_handler(commands=['kar'])
 async def handle_kar(message: types.Message):
     user_id = message.chat.id
@@ -60,6 +54,5 @@ async def handle_kar(message: types.Message):
 
     await message.reply(response)
 
-# Botu başlat
 def start_bot():
     executor.start_polling(dp, skip_updates=True)
