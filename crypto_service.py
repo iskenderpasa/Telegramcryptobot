@@ -1,11 +1,18 @@
 import requests
 
-def get_crypto_price(symbol):
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={symbol}&vs_currencies=usdt"
+def get_price(coin_symbol):
     try:
+        url = f'https://api.coingecko.com/api/v3/simple/price?ids={coin_symbol}&vs_currencies=usd'
         response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        return data.get(symbol, {}).get("usdt")
-    except Exception:
+
+        if response.status_code == 200:
+            data = response.json()
+            if coin_symbol in data and 'usd' in data[coin_symbol]:
+                return data[coin_symbol]['usd']
+            else:
+                return None
+        else:
+            return None
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
         return None
