@@ -1,58 +1,35 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
-from models import init_db, get_user_assets
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
 from crypto_service import get_price
+import os
 
-API_TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo")
 
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Merhaba! Ben kripto asistan botuyum.")
 
-init_db()
-
-@dp.message_handler(commands=['start'])
-async def send_welcome(message: types.Message):
-    await message.reply("Merhaba! Ben kripto asistan botuyum.")
-
-@dp.message_handler(commands=['help'])
-async def send_help(message: types.Message):
-    await message.reply("Komutlar:\n/start\n/help\n/fiyat COIN\n/kar")
-
-@dp.message_handler(commands=['fiyat'])
-async def handle_fiyat(message: types.Message):
-    try:
-        coin_name = message.text.split()[1].upper()
-    except IndexError:
-        await message.reply("Lütfen coin adını girin. Örn: /fiyat BTC")
+def fiyat(update: Update, context: CallbackContext):
+    if len(context.args) == 0:
+        update.message.reply_text("Lütfen bir coin ismi girin. Örnek: /fiyat BTC")
         return
 
-    price = get_price(coin_name)
-    if price:
-        await message.reply(f"{coin_name} fiyatı: {price} USDT")
+    coin = context.args[0].lower()
+    price = get_price(coin)
+    if price is not None:
+        update.message.reply_text(f"{coin.upper()} fiyatı: {price} USDT")
     else:
-        await message.reply(f"{coin_name} fiyatı alınamadı.")
+        update.message.reply_text("Fiyat alınamadı. Lütfen geçerli bir coin girin.")
 
-@dp.message_handler(commands=['kar'])
-async def handle_kar(message: types.Message):
-    user_id = message.chat.id
-    assets = get_user_assets(user_id)
-
-    if not assets:
-        await message.reply("Kayıtlı varlık bulunamadı.")
-        return
-
-    response = "💰 Kar/Zarar Durumu:\n"
-    for asset in assets:
-        current_price = get_price(asset.coin)
-        if current_price:
-            total_value = asset.amount * current_price
-            total_cost = asset.amount * asset.buy_price
-            profit = total_value - total_cost
-            response += f"\n{asset.coin}: {profit:.2f} USDT (Maliyet: {total_cost:.2f}, Değer: {total_value:.2f})"
-        else:
-            response += f"\n{asset.coin}: Fiyat alınamadı."
-
-    await message.reply(response)
+def kar(update: Update, context: CallbackContext):
+    update.message.reply_text("Kar/Zarar özelliği yakında aktif edilecek.")
 
 def start_bot():
-    executor.start_polling(dp, skip_updates=True)
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("fiyat", fiyat))
+    dp.add_handler(CommandHandler("kar", kar))
+
+    updater.start_polling()
+    updater.idle()
