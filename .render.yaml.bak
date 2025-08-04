@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: telegram-bot
-    env: python
-    plan: free
-    buildCommand: |
-      pip install poetry
-      poetry install
-    startCommand: poetry run python app.py
