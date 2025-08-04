@@ -1,45 +1,23 @@
-import requests
-import time
-from threading import Thread
-from crypto_service import get_price
+from src.models import Alarm
+from src.crypto_service import get_crypto_price
+from src.app import db
+from telegram import Bot
 
-BOT_TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
 CHAT_ID = 583677323
+TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
+bot = Bot(token=TOKEN)
 
-# Basit alarm yapısı: { "coin": "INJ", "fiyat": 14.00 }
-alarmlar = []
+def set_alarm(coin: str, target_price: float):
+    alarm = Alarm(coin=coin.upper(), target_price=target_price)
+    db.session.add(alarm)
+    db.session.commit()
 
-def alarm_ekle(coin, fiyat):
-    try:
-        fiyat = float(fiyat)
-        alarmlar.append({"coin": coin.upper(), "fiyat": fiyat})
-        return f"🔔 Alarm ayarlandı: {coin.upper()} > {fiyat} USDT"
-    except:
-        return "Hatalı fiyat girdisi. Örn: /alarm INJ 14.00"
-
-def alarm_kontrol():
-    while True:
-        for alarm in alarmlar[:]:
-            coin = alarm["coin"]
-            hedef_fiyat = alarm["fiyat"]
-            anlik_fiyat = get_price(coin)
-
-            if anlik_fiyat and anlik_fiyat >= hedef_fiyat:
-                mesaj = f"🚨 {coin} fiyatı {anlik_fiyat:.2f} USDT’ye ulaştı (Alarm: {hedef_fiyat})"
-                send_message(mesaj)
-                alarmlar.remove(alarm)
-
-        time.sleep(60)  # 1 dakikada bir kontrol
-
-def send_message(text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text
-    }
-    requests.post(url, data=payload)
-
-def start_alarm_thread():
-    t = Thread(target=alarm_kontrol)
-    t.daemon = True
-    t.start()
+def check_alarms():
+    alarms = Alarm.query.all()
+    for alarm in alarms:
+        current_price = get_crypto_price(alarm.coin)
+        if current_price is not None and current_price >= alarm.target_price:
+            msg = f"🚨 {alarm.coin} alarmı tetiklendi!\n📈 {current_price:.2f} USDT ≥ 🎯 {alarm.target_price:.2f} USDT"
+            bot.send_message(chat_id=CHAT_ID, text=msg)
+            db.session.delete(alarm)
+    db.session.commit()
