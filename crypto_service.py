@@ -1,18 +1,18 @@
 import requests
 
-def get_price(coin_symbol):
-    try:
-        url = f'https://api.coingecko.com/api/v3/simple/price?ids={coin_symbol}&vs_currencies=usd'
-        response = requests.get(url)
+def get_price(coin_name: str):
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_name.lower()}&vs_currencies=usd"
 
-        if response.status_code == 200:
-            data = response.json()
-            if coin_symbol in data and 'usd' in data[coin_symbol]:
-                return data[coin_symbol]['usd']
-            else:
-                return None
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        if coin_name.lower() in data:
+            price = data[coin_name.lower()]['usd']
+            return f"{coin_name.capitalize()} şu anda {price} USD civarında işlem görüyor."
         else:
-            return None
-    except Exception as e:
-        print(f"Hata oluştu: {e}")
-        return None
+            return f"{coin_name.capitalize()} için fiyat verisi bulunamadı. İsmi doğru yazdığınızdan emin olun."
+
+    except requests.exceptions.RequestException as e:
+        return f"Fiyat alınırken bir hata oluştu: {e}"
