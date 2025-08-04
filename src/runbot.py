@@ -1,4 +1,4 @@
-from src.bot import application
+from bot import application
 from src.scheduler import schedule_jobs
 
 def run_all():
