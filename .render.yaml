@@ -3,4 +3,4 @@ services:
     name: telegramcryptobot
     env: python
     buildCommand: ""
-    startCommand: "python src/app.py"
+    startCommand: "python app.py"
