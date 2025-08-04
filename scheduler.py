@@ -1,21 +1,31 @@
-import schedule
-import time
-import threading
-from routes import send_summary_to_all_users
+from apscheduler.schedulers.background import BackgroundScheduler
+import portfolio_service
+import requests
 
-def job():
-    print("Scheduler: Sending summary to all users.")
-    send_summary_to_all_users()
+BOT_TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
+CHAT_ID = 583677323  # Kullanıcının Telegram chat ID'si
+
+def gonder_rapor():
+    mesaj = portfolio_service.kar_zarar_ozeti()
+    send_message(mesaj)
+
+def send_message(text):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": text,
+        "parse_mode": "Markdown"
+    }
+    requests.post(url, data=payload)
 
 def start_scheduler():
-    schedule.every().day.at("08:00").do(job)
-    schedule.every().day.at("18:00").do(job)
+    scheduler = BackgroundScheduler()
 
-    def run_scheduler():
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
+    # Günde 4 kez belirli saatlerde rapor gönder
+    scheduler.add_job(gonder_rapor, 'cron', hour=10, minute=0)
+    scheduler.add_job(gonder_rapor, 'cron', hour=14, minute=0)
+    scheduler.add_job(gonder_rapor, 'cron', hour=18, minute=0)
+    scheduler.add_job(gonder_rapor, 'cron', hour=22, minute=0)
 
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    scheduler_thread.daemon = True
-    scheduler_thread.start()
+    scheduler.start()
+    print("Zamanlayıcı başlatıldı.")
