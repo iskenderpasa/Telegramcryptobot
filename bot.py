@@ -1,56 +1,43 @@
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
-from crypto_service import get_price
-import os
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import portfolio_service
+import crypto_service
 
-# Bot Token
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo")
+TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
 
-# /start komutu
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Merhaba! Ben kripto asistan botuyum.\n"
-        "/start - Başlat\n"
-        "/kar - Kar-Zarar\n"
-        "/fiyat <coin> - Fiyat Sorgula\n"
-        "/help - Yardım"
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Merhaba! Portföy takip botuna hoş geldin. Komutlar için /help yazabilirsin.")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "/start - Botu başlat\n"
+        "/help - Yardım al\n"
+        "/kar - Portföydeki kar/zarar durumunu göster\n"
+        "/fiyat [coin] - Coin fiyatını göster (örn: /fiyat BTC)\n"
     )
 
-# /help komutu
-def help_command(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Komutlar:\n"
-        "/start - Botu başlatır\n"
-        "/kar - Kar/Zarar durumunu gösterir\n"
-        "/fiyat <coin> - Belirttiğiniz coinin güncel fiyatını gösterir"
-    )
+async def kar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    mesaj = portfolio_service.kar_zarar_ozeti()
+    await update.message.reply_text(mesaj)
 
-# /fiyat komutu
-def fiyat(update: Update, context: CallbackContext):
-    if not context.args:
-        update.message.reply_text("Lütfen bir coin ismi girin. Örnek: /fiyat BTC")
+async def fiyat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) == 0:
+        await update.message.reply_text("Lütfen bir coin girin. Örn: /fiyat BTC")
         return
-
-    coin = context.args[0].lower()
-    price = get_price(coin)
-    if price is not None:
-        update.message.reply_text(f"{coin.upper()} fiyatı: {price} USDT")
+    coin = context.args[0]
+    fiyat = crypto_service.get_price(coin)
+    if fiyat:
+        await update.message.reply_text(f"{coin.upper()} fiyatı: {fiyat} USD")
     else:
-        update.message.reply_text("Fiyat alınamadı. Lütfen geçerli bir coin girin.")
+        await update.message.reply_text("Coin bulunamadı.")
 
-# /kar komutu
-def kar(update: Update, context: CallbackContext):
-    update.message.reply_text("Kar/Zarar özelliği yakında aktif edilecek.")
+def run():
+    app = ApplicationBuilder().token(TOKEN).build()
 
-# Botu başlat
-def start_bot():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("kar", kar))
+    app.add_handler(CommandHandler("fiyat", fiyat))
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("fiyat", fiyat))
-    dp.add_handler(CommandHandler("kar", kar))
-
-    updater.start_polling()
-    updater.idle()
+    print("Bot çalışıyor...")
+    
