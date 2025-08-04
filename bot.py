@@ -1,54 +1,47 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import portfolio_service
-import crypto_service
+from portfolio_service import get_portfolio_summary, set_alarm_price
+from crypto_service import get_price
 
 TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
+CHAT_ID = 583677323
 
+application = ApplicationBuilder().token(TOKEN).build()
+
+# /start komutu
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Merhaba! Portföy takip botuna hoş geldin. Komutlar için /help yazabilirsin.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Merhaba! Coin portföy takip botuna hoş geldin.")
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "/start - Botu başlat\n"
-        "/help - Yardım al\n"
-        "/kar - Portföydeki kar/zarar durumunu göster\n"
-        "/fiyat [coin] - Coin fiyatını göster (örn: /fiyat BTC)\n"
-    )
-
+# /kar komutu
 async def kar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    mesaj = portfolio_service.kar_zarar_ozeti()
-    await update.message.reply_text(mesaj)
+    summary = get_portfolio_summary()
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=summary)
 
+# /fiyat komutu
 async def fiyat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) == 0:
-        await update.message.reply_text("Lütfen bir coin girin. Örn: /fiyat BTC")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Kullanım: /fiyat COIN")
         return
-    coin = context.args[0]
-    fiyat = crypto_service.get_price(coin)
-    if fiyat:
-        await update.message.reply_text(f"{coin.upper()} fiyatı: {fiyat} USD")
-    else:
-        await update.message.reply_text("Coin bulunamadı.")
+    coin = context.args[0].upper()
+    price = get_price(coin)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{coin} güncel fiyatı: {price} USDT")
 
-def run():
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("kar", kar))
-    app.add_handler(CommandHandler("fiyat", fiyat))
-
-    print("Bot çalışıyor...")
-    from alarm_service import alarm_ekle
-
+# /alarm komutu
 async def alarm(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(context.args) < 2:
-        await update.message.reply_text("Kullanım: /alarm COIN FİYAT\nÖrn: /alarm INJ 14.00")
+    if len(context.args) != 2:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Kullanım: /alarm COIN FİYAT")
         return
-    coin = context.args[0]
-    fiyat = context.args[1]
-    cevap = alarm_ekle(coin, fiyat)
-    await update.message.reply_text(cevap)
+    coin = context.args[0].upper()
+    try:
+        target_price = float(context.args[1])
+    except ValueError:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Fiyat geçerli değil.")
+        return
+    set_alarm_price(coin, target_price)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{coin} için {target_price} USDT fiyat alarmı ayarlandı.")
 
-app.add_handler(CommandHandler("alarm", alarm))
+# Komutları ekle
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("kar", kar))
+application.add_handler(CommandHandler("fiyat", fiyat))
+application.add_handler(CommandHandler("alarm", alarm))
