@@ -1,31 +1,15 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-import portfolio_service
-import requests
+from src.alarm_service import check_alarms
+from src.portfolio_service import send_portfolio_summary
+import pytz
 
-BOT_TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
-CHAT_ID = 583677323  # Kullanıcının Telegram chat ID'si
+def schedule_jobs():
+    scheduler = BackgroundScheduler(timezone=pytz.timezone('Europe/Istanbul'))
 
-def gonder_rapor():
-    mesaj = portfolio_service.kar_zarar_ozeti()
-    send_message(mesaj)
+    # Her 10 dakikada bir alarm kontrolü
+    scheduler.add_job(check_alarms, 'interval', minutes=10)
 
-def send_message(text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text,
-        "parse_mode": "Markdown"
-    }
-    requests.post(url, data=payload)
-
-def start_scheduler():
-    scheduler = BackgroundScheduler()
-
-    # Günde 4 kez belirli saatlerde rapor gönder
-    scheduler.add_job(gonder_rapor, 'cron', hour=10, minute=0)
-    scheduler.add_job(gonder_rapor, 'cron', hour=14, minute=0)
-    scheduler.add_job(gonder_rapor, 'cron', hour=18, minute=0)
-    scheduler.add_job(gonder_rapor, 'cron', hour=22, minute=0)
+    # Günde 4 kez portföy özeti gönderimi: 10:00, 14:00, 18:00, 22:00
+    scheduler.add_job(send_portfolio_summary, 'cron', hour='10,14,18,22', minute=0)
 
     scheduler.start()
-    print("Zamanlayıcı başlatıldı.")
