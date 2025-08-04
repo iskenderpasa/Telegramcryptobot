@@ -40,4 +40,15 @@ def run():
     app.add_handler(CommandHandler("fiyat", fiyat))
 
     print("Bot çalışıyor...")
-    
+    from alarm_service import alarm_ekle
+
+async def alarm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if len(context.args) < 2:
+        await update.message.reply_text("Kullanım: /alarm COIN FİYAT\nÖrn: /alarm INJ 14.00")
+        return
+    coin = context.args[0]
+    fiyat = context.args[1]
+    cevap = alarm_ekle(coin, fiyat)
+    await update.message.reply_text(cevap)
+
+app.add_handler(CommandHandler("alarm", alarm))
