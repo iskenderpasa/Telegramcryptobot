@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from src.routes import *
-from src.runbot import run_all
+from routes import *
+from runbot import run_all
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///alarms.db'
