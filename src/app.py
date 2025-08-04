@@ -1,16 +1,13 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from routes import *
+from src.routes import *
+from src.runbot import run_all
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///alarms.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 
-# Ana endpoint
-@app.route('/')
-def index():
-    return "Telegram bot çalışıyor. ✅"
-
-# Gerekirse diğer Flask route'larını routes.py içinde tanımlayıp import edebilirsin
+if __name__ == "__main__":
+    run_all()
+    app.run(host="0.0.0.0", port=10000)
