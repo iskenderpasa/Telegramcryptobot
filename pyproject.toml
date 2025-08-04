@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "telegram-bot"
+version = "0.1.0"
+description = "Coin portföy takip botu"
+authors = ["Sen"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+python-telegram-bot = "^20.3"
+flask = "^2.3.2"
+requests = "^2.31.0"
+apscheduler = "^3.10.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
