@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from src.app import app, db
+from app import app, db
 from src.models import Alarm
 
 @app.route("/")
