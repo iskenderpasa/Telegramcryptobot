@@ -1,14 +1,16 @@
 from flask import Flask
-import threading
-from runbot import run_all
+from flask_sqlalchemy import SQLAlchemy
+from routes import *
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+db = SQLAlchemy(app)
+
+# Ana endpoint
 @app.route('/')
 def index():
-    return "Bot çalışıyor!"
+    return "Telegram bot çalışıyor. ✅"
 
-if __name__ == "__main__":
-    t = threading.Thread(target=run_all)
-    t.start()
-    app.run(host='0.0.0.0', port=10000)
+# Gerekirse diğer Flask route'larını routes.py içinde tanımlayıp import edebilirsin
