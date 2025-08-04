@@ -1,18 +1,37 @@
 import requests
 
-def get_price(coin_name: str):
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_name.lower()}&vs_currencies=usd"
+# Sembol-ID eşleştirmesi (gerekirse genişletilir)
+COIN_ID_MAP = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "INJ": "injective-protocol",
+    "RNDR": "render-token",
+    "SOL": "solana",
+    "AVAX": "avalanche-2",
+    "ADA": "cardano",
+    "DOT": "polkadot",
+    "XRP": "ripple",
+    "DOGE": "dogecoin",
+    "SHIB": "shiba-inu",
+    "OP": "optimism",
+    "PENDLE": "pendle"
+}
 
+def get_price(coin_symbol):
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
+        coin_id = COIN_ID_MAP.get(coin_symbol.upper())
+        if not coin_id:
+            return f"{coin_symbol.upper()} için ID bulunamadı."
+
+        response = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={
+                "ids": coin_id,
+                "vs_currencies": "usd"
+            }
+        )
         data = response.json()
-
-        if coin_name.lower() in data:
-            price = data[coin_name.lower()]['usd']
-            return f"{coin_name.capitalize()} şu anda {price} USD civarında işlem görüyor."
-        else:
-            return f"{coin_name.capitalize()} için fiyat verisi bulunamadı. İsmi doğru yazdığınızdan emin olun."
-
-    except requests.exceptions.RequestException as e:
-        return f"Fiyat alınırken bir hata oluştu: {e}"
+        return data[coin_id]["usd"]
+    except Exception as e:
+        print(f"Hata: {e}")
+        return None
