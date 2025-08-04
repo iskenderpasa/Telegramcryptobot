@@ -1,9 +1,7 @@
-from bot import application
-from telegram.ext import CommandHandler
-from scheduler import schedule_jobs
-from routes import alarm
+from src.bot import application
 
-def run_all():
-    application.add_handler(CommandHandler("alarm", alarm))
-    schedule_jobs()
-    application.run_polling()
+def start_bot():
+    application.run_polling(allowed_updates=application.resolve_used_update_types())
+
+if __name__ == "__main__":
+    start_bot()
