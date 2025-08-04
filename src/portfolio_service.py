@@ -1,45 +1,48 @@
-import crypto_service
+from src.crypto_service import get_crypto_price
+from telegram import Bot
 
-# Örnek portföy verisi (gerçek kullanımda DB'den okunacak)
-portfolio = {
-    "INJ": {
-        "adet": 1.09,
-        "alis": 13.75
-    },
-    "RNDR": {
-        "adet": 8.57,
-        "alis": 3.79
-    },
-    "PENDLE": {
-        "adet": 2.5,
-        "alis": 4.00
-    }
+# Telegram bildirim için ayarlar
+CHAT_ID = 583677323
+TOKEN = "8049173481:AAEb19lLTxrMc7LJcstsxLMKW3fYMGfFybo"
+bot = Bot(token=TOKEN)
+
+# Portföy: coin sembolü -> (adet, alış fiyatı)
+PORTFOLIO = {
+    "inj": [(1.09, 13.75), (2.13, 12.692)],
+    "rndr": [(8.57, 3.79), (7.14, 4.20), (6.97, 3.47)],
+    "pendle": [(2.5, 4.00)],
 }
 
-def kar_zarar_ozeti():
-    mesaj = "💼 *Portföy Özeti:*\n"
-    toplam_kar_usdt = 0
+def calculate_portfolio_value():
+    total_buy_value = 0
+    total_current_value = 0
+    message = "📊 *Portföy Özeti:*\n\n"
 
-    for coin, veri in portfolio.items():
-        adet = veri["adet"]
-        alis = veri["alis"]
-        mevcut_fiyat = crypto_service.get_price(coin)
-        if mevcut_fiyat is None:
-            mesaj += f"{coin}: Fiyat alınamadı.\n"
+    for coin, entries in PORTFOLIO.items():
+        total_amount = sum(e[0] for e in entries)
+        avg_buy_price = sum(e[0] * e[1] for e in entries) / total_amount
+        current_price = get_crypto_price(coin)
+        if current_price is None:
             continue
+        current_value = total_amount * current_price
+        buy_value = total_amount * avg_buy_price
+        total_buy_value += buy_value
+        total_current_value += current_value
 
-        toplam_alis = adet * alis
-        toplam_mevcut = adet * mevcut_fiyat
-        kar = toplam_mevcut - toplam_alis
-        yuzde = (kar / toplam_alis) * 100 if toplam_alis else 0
-        toplam_kar_usdt += kar
+        pnl = current_value - buy_value
+        pnl_pct = (pnl / buy_value) * 100
 
-        mesaj += (
-            f"• {coin}:\n"
-            f"  - Alış: {alis:.2f} × {adet} = {toplam_alis:.2f} USDT\n"
-            f"  - Şimdi: {mevcut_fiyat:.2f} × {adet} = {toplam_mevcut:.2f} USDT\n"
-            f"  - Kar/Zarar: {'+' if kar >= 0 else ''}{kar:.2f} USDT ({yuzde:.2f}%)\n"
-        )
+        message += f"💰 {coin.upper()}: {total_amount:.2f} adet\n"
+        message += f"   - Alış: {avg_buy_price:.2f} USDT\n"
+        message += f"   - Şu an: {current_price:.2f} USDT\n"
+        message += f"   - Kar/Zarar: {pnl:.2f} USDT ({pnl_pct:.2f}%)\n\n"
 
-    mesaj += f"\n📊 *Toplam Kar/Zarar:* {'+' if toplam_kar_usdt >= 0 else ''}{toplam_kar_usdt:.2f} USDT"
-    return mesaj
+    total_pnl = total_current_value - total_buy_value
+    total_pct = (total_pnl / total_buy_value) * 100 if total_buy_value > 0 else 0
+
+    message += f"📈 *Genel Kar/Zarar:* {total_pnl:.2f} USDT ({total_pct:.2f}%)"
+    return message
+
+def send_portfolio_summary():
+    summary = calculate_portfolio_value()
+    bot.send_message(chat_id=CHAT_ID, text=summary, parse_mode="Markdown")
