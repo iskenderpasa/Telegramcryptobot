@@ -1,6 +1,6 @@
 from flask import Flask
 import threading
-from main import run_all
+from runbot import run_all
 
 app = Flask(__name__)
 
