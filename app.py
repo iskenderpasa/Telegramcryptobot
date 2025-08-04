@@ -7,8 +7,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-from routes import *
-
 @app.route("/")
 def index():
     return "Crypto Telegram Bot is running!"
